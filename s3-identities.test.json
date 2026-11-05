@@ -1,0 +1,16 @@
+{
+  "identities": [
+    {
+      "name": "alice",
+      "accessKeyId": "AKIAALICE000000000001",
+      "secretAccessKey": "rahasia-alice-yang-panjang",
+      "password": "password-alice"
+    },
+    {
+      "name": "bob",
+      "accessKeyId": "AKIABOB000000000000002",
+      "secretAccessKey": "rahasia-bob-yang-panjang",
+      "password": "password-bob"
+    }
+  ]
+}

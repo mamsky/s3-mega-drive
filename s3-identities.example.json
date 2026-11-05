@@ -1,0 +1,16 @@
+{
+  "identities": [
+    {
+      "name": "aplikasi",
+      "accessKeyId": "MEGADRIVEAPLIKASI0001",
+      "secretAccessKey": "ganti-dengan-rahasia-panjang-acak-untuk-aplikasi",
+      "password": "ganti-dengan-password-login-console"
+    },
+    {
+      "name": "cadangan",
+      "accessKeyId": "MEGADRIVECADANGAN0002",
+      "secretAccessKey": "ganti-dengan-rahasia-panjang-acak-untuk-cadangan",
+      "password": "ganti-dengan-password-login-console"
+    }
+  ]
+}

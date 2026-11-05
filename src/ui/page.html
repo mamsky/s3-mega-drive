@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MEGA Drive — S3 Console</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📦</text></svg>" />
+<style>
+  :root {
+    --bg: #0b0e14;
+    --panel: #121722;
+    --panel-2: #171e2b;
+    --line: #232c3d;
+    --text: #e6ecf5;
+    --muted: #8a97ad;
+    --accent: #4c8dff;
+    --accent-soft: #1e3a6b;
+    --danger: #ff5d5d;
+    --ok: #35d07f;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  button { font: inherit; cursor: pointer; }
+  input { font: inherit; }
+  a { color: var(--accent); }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 64px; }
+
+  /* ---------- login ---------- */
+  .login-screen {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+  .login-card h1 { margin: 0 0 4px; font-size: 19px; letter-spacing: -0.2px; }
+  .login-card p { margin: 0 0 22px; color: var(--muted); font-size: 13px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+  .field input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    outline: none;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input:-webkit-autofill,
+  .field input:-webkit-autofill:hover,
+  .field input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text);
+    -webkit-box-shadow: 0 0 0 1000px var(--bg) inset;
+    caret-color: var(--text);
+    transition: background-color 9999s ease-in-out 0s;
+  }
+  .btn {
+    padding: 10px 16px;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-block { width: 100%; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+  .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-ghost:hover { background: var(--panel-2); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid #4a2222; }
+  .btn-danger:hover { background: #2a1414; }
+  .error {
+    margin-top: 14px;
+    padding: 9px 12px;
+    background: #2a1414;
+    border: 1px solid #4a2222;
+    border-radius: 8px;
+    color: #ffb3b3;
+    font-size: 13px;
+  }
+  .hidden { display: none !important; }
+
+  /* ---------- app shell ---------- */
+  header.top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0 20px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 22px;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 650; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .who { margin-left: auto; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+  .pill {
+    padding: 3px 9px;
+    background: var(--accent-soft);
+    border: 1px solid #2c4d85;
+    border-radius: 999px;
+    color: #b9d2ff;
+    font-size: 12px;
+  }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab {
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--panel); border-color: var(--line); color: var(--text); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 15px; }
+  .card .sub { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+
+  .kv { display: grid; grid-template-columns: 132px 1fr; gap: 10px 14px; align-items: center; }
+  .kv dt { color: var(--muted); font-size: 12.5px; }
+  .kv dd { margin: 0; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .kv dd code {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 6px 9px;
+    font-size: 12.5px;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .icon-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    color: var(--muted);
+    padding: 5px 8px;
+    font-size: 11px;
+    flex: none;
+  }
+  .icon-btn:hover { color: var(--text); background: var(--panel-2); }
+
+  .snippets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  pre.code {
+    margin: 0;
+    padding: 14px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+
+  /* ---------- browser ---------- */
+  .crumb { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; font-size: 13px; }
+  .crumb button {
+    background: transparent;
+    border: 0;
+    color: var(--accent);
+    padding: 2px 4px;
+    border-radius: 5px;
+  }
+  .crumb button:hover { background: var(--panel-2); }
+  .crumb .sep { color: var(--muted); }
+  .crumb .now { color: var(--muted); }
+
+  table.list { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.list th {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+  }
+  table.list td { padding: 9px 10px; border-bottom: 1px solid #1a2130; }
+  table.list tr:last-child td { border-bottom: 0; }
+  table.list tr:hover td { background: var(--panel-2); }
+  .name-btn {
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    padding: 0;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .name-btn:hover { color: var(--accent); }
+  .tag { color: var(--muted); font-size: 11.5px; }
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .empty { padding: 26px 10px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .toolbar .spacer { flex: 1; }
+
+  .buckets { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .bucket {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    text-align: left;
+    color: var(--text);
+  }
+  .bucket:hover { border-color: var(--accent); }
+  .bucket .bname { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 26px;
+    transform: translateX(-50%);
+    padding: 11px 18px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+    z-index: 50;
+  }
+  .toast.bad { border-color: #4a2222; color: #ffb3b3; }
+
+  .progress {
+    height: 4px;
+    background: var(--panel-2);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  .progress > div { height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
+
+  @media (max-width: 640px) {
+    .kv { grid-template-columns: 1fr; gap: 4px 0; }
+    .kv dt { margin-top: 8px; }
+    table.list th:nth-child(2), table.list td:nth-child(2) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section class="login-screen" id="login-screen">
+  <form class="login-card" id="login-form">
+    <h1>MEGA Drive Console</h1>
+    <p>Masuk untuk melihat konfigurasi S3 dan mengelola file.</p>
+    <div class="field">
+      <label for="in-name">Nama identitas</label>
+      <input id="in-name" name="name" autocomplete="username" placeholder="aplikasi" required />
+    </div>
+    <div class="field">
+      <label for="in-pass">Password</label>
+      <input id="in-pass" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required />
+    </div>
+    <button class="btn btn-block" type="submit" id="login-btn">Masuk</button>
+    <div class="error hidden" id="login-error"></div>
+  </form>
+</section>
+
+<!-- APP -->
+<main class="wrap hidden" id="app">
+  <header class="top">
+    <div class="brand"><span class="dot"></span> MEGA Drive Console</div>
+    <div class="who">
+      <span class="pill" id="identity-pill">—</span>
+      <button class="btn-ghost" id="logout-btn">Keluar</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="config">Konfigurasi</button>
+    <button class="tab" data-tab="usage">Cara pakai</button>
+    <button class="tab" data-tab="files">File</button>
+  </nav>
+
+  <!-- CONFIG -->
+  <section id="tab-config">
+    <div class="card">
+      <h2>Kredensial S3</h2>
+      <p class="sub">Pakai nilai ini di aplikasi kamu. Jangan dibagikan.</p>
+      <dl class="kv">
+        <dt>Endpoint</dt>
+        <dd><code id="v-endpoint">—</code><button class="icon-btn" data-copy="v-endpoint">Salin</button></dd>
+        <dt>Region</dt>
+        <dd><code id="v-region">—</code><button class="icon-btn" data-copy="v-region">Salin</button></dd>
+        <dt>Bucket</dt>
+        <dd><code id="v-bucket">—</code><button class="icon-btn" data-copy="v-bucket">Salin</button></dd>
+        <dt>Access key ID</dt>
+        <dd><code id="v-key">—</code><button class="icon-btn" data-copy="v-key">Salin</button></dd>
+        <dt>Secret key</dt>
+        <dd>
+          <code id="v-secret">••••••••••••••••</code>
+          <button class="icon-btn" id="reveal-btn">Lihat</button>
+          <button class="icon-btn" data-copy="v-secret">Salin</button>
+        </dd>
+        <dt>Path style</dt>
+        <dd><code>true</code><button class="icon-btn" data-copy="force">Salin</button></dd>
+        <dt>Folder MEGA</dt>
+        <dd><code id="v-root">—</code></dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <h2>Kuota MEGA</h2>
+      <p class="sub">Sisa ruang akun MEGA tempat semua identitas menulis.</p>
+      <dl class="kv">
+        <dt>Terpakai</dt>
+        <dd><code id="v-used">—</code></dd>
+        <dt>Total</dt>
+        <dd><code id="v-total">—</code></dd>
+      </dl>
+      <div class="progress"><div id="quota-bar"></div></div>
+    </div>
+  </section>
+
+  <!-- USAGE -->
+  <section id="tab-usage" class="hidden">
+    <div class="card">
+      <h2>Contoh kode</h2>
+      <p class="sub">Pilih bahasa/tool, lalu salin. Nilai kredensial sudah terisi otomatis.</p>
+      <div class="snippets" id="snippet-tabs"></div>
+      <pre class="code" id="snippet-code">—</pre>
+      <div style="margin-top:12px">
+        <button class="btn-ghost" data-copy="snippet-code">Salin contoh</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Aturan singkat</h2>
+      <p class="sub">Hal yang perlu diketahui sebelum dipakai.</p>
+      <ul style="margin:0; padding-left:18px; color:var(--muted); font-size:13px; line-height:1.9">
+        <li>Bucket = folder di dalam ruang identitasmu. Bucket dibuat otomatis saat pertama dipakai.</li>
+        <li>Key = path file di dalam bucket, boleh berisi <code>/</code> seperti <code>produk/sepatu.png</code>.</li>
+        <li>Identitas lain tidak bisa melihat atau menyentuh file kamu — semua akses dibatasi ke folder sendiri.</li>
+        <li>Ganti file = <code>PutObject</code> ke key yang sama; ETag berubah karena node MEGA berganti.</li>
+        <li>Upload besar sebaiknya lewat multipart (otomatis oleh SDK untuk file besar).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- FILES -->
+  <section id="tab-files" class="hidden">
+    <div class="card">
+      <div class="toolbar">
+        <button class="btn-ghost" id="up-btn">← Naik</button>
+        <div class="crumb" id="crumb"></div>
+        <div class="spacer"></div>
+        <button class="btn-ghost" id="new-bucket-btn">Bucket baru</button>
+        <button class="btn-ghost" id="new-folder-btn">Folder baru</button>
+        <button class="btn" id="upload-btn">Upload file</button>
+        <input type="file" id="file-input" class="hidden" multiple />
+      </div>
+      <div id="files-body"><div class="empty">Memuat…</div></div>
+    </div>
+  </section>
+</main>
+
+<div class="toast hidden" id="toast"></div>
+
+<script>
+const state = {
+  endpoint: '',
+  region: '',
+  accessKeyId: '',
+  secretAccessKey: '',
+  root: '',
+  name: '',
+  revealed: false,
+  bucket: '',
+  prefix: '',
+  snippet: 'js',
+}
+
+const $ = (id) => document.getElementById(id)
+const show = (el) => el.classList.remove('hidden')
+const hide = (el) => el.classList.add('hidden')
+
+let toastTimer
+function toast(message, bad = false) {
+  const el = $('toast')
+  el.textContent = message
+  el.classList.toggle('bad', bad)
+  show(el)
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => hide(el), 2600)
+}
+
+function bytes(n) {
+  if (!Number.isFinite(n)) return '—'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let value = n
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit++ }
+  return `${value.toFixed(value < 10 && unit > 0 ? 1 : 0)} ${units[unit]}`
+}
+
+async function api(path, options = {}) {
+  const response = await fetch(path, { credentials: 'same-origin', ...options })
+  const type = response.headers.get('content-type') ?? ''
+  const body = type.includes('application/json') ? await response.json() : await response.text()
+  if (!response.ok) throw new Error(body?.error ?? body ?? `HTTP ${response.status}`)
+  return body
+}
+
+/* ---------- login ---------- */
+
+$('login-form').addEventListener('submit', async (event) => {
+  event.preventDefault()
+  const btn = $('login-btn')
+  const box = $('login-error')
+  hide(box)
+  btn.disabled = true
+  btn.textContent = 'Memeriksa…'
+  try {
+    const data = await api('/api/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: $('in-name').value, password: $('in-pass').value }),
+    })
+    state.name = data.name
+    await boot()
+  } catch (err) {
+    box.textContent = err.message
+    show(box)
+  } finally {
+    btn.disabled = false
+    btn.textContent = 'Masuk'
+  }
+})
+
+$('logout-btn').addEventListener('click', async () => {
+  await api('/api/logout', { method: 'POST' }).catch(() => {})
+  location.reload()
+})
+
+/* ---------- boot ---------- */
+
+async function boot() {
+  const info = await api('/api/me')
+  state.endpoint = info.endpoint
+  state.region = info.region
+  state.accessKeyId = info.accessKeyId
+  state.secretAccessKey = info.secretAccessKey
+  state.root = info.root
+  state.name = info.name
+
+  $('v-endpoint').textContent = info.endpoint
+  $('v-region').textContent = info.region
+  $('v-key').textContent = info.accessKeyId
+  $('v-root').textContent = `${info.root}/`
+  $('v-secret').textContent = '••••••••••••••••'
+  $('identity-pill').textContent = info.name
+
+  if (info.quota) {
+    $('v-used').textContent = `${bytes(info.quota.used)} (${info.quota.percent}%)`
+    $('v-total').textContent = bytes(info.quota.total)
+    $('quota-bar').style.width = `${Math.min(100, info.quota.percent)}%`
+  }
+
+  const buckets = await api('/api/browse')
+  state.bucket = buckets.buckets?.[0]?.name ?? ''
+  $('v-bucket').textContent = state.bucket || '(belum ada)'
+
+  renderSnippets()
+  hide($('login-screen'))
+  show($('app'))
+  await renderFiles()
+}
+
+/* ---------- copy ---------- */
+
+document.addEventListener('click', async (event) => {
+  const btn = event.target.closest('[data-copy]')
+  if (!btn) return
+  const id = btn.dataset.copy
+  const value = id === 'force' ? 'true' : $(id)?.textContent ?? ''
+  try {
+    await navigator.clipboard.writeText(value)
+    toast('Disalin')
+  } catch {
+    toast('Gagal menyalin', true)
+  }
+})
+
+$('reveal-btn').addEventListener('click', () => {
+  state.revealed = !state.revealed
+  $('v-secret').textContent = state.revealed ? state.secretAccessKey : '••••••••••••••••'
+  $('reveal-btn').textContent = state.revealed ? 'Sembunyi' : 'Lihat'
+})
+
+/* ---------- tabs ---------- */
+
+document.querySelectorAll('.tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach((other) => other.classList.toggle('active', other === tab))
+    for (const name of ['config', 'usage', 'files']) {
+      $(`tab-${name}`).classList.toggle('hidden', name !== tab.dataset.tab)
+    }
+  })
+})
+
+/* ---------- snippets ---------- */
+
+const SNIPPETS = {
+  js: () => `import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+
+const s3 = new S3Client({
+  endpoint: '${state.endpoint}',
+  region: '${state.region}',
+  forcePathStyle: true,
+  credentials: {
+    accessKeyId: '${state.accessKeyId}',
+    secretAccessKey: '${state.secretAccessKey}',
+  },
+})
+
+await s3.send(new PutObjectCommand({
+  Bucket: '${state.bucket || 'nama-bucket-kamu'}',
+  Key: 'contoh/halo.txt',
+  Body: 'halo dari S3 gateway',
+  ContentType: 'text/plain',
+}))`,
+  boto3: () => `import boto3
+
+s3 = boto3.client(
+    "s3",
+    endpoint_url="${state.endpoint}",
+    region_name="${state.region}",
+    aws_access_key_id="${state.accessKeyId}",
+    aws_secret_access_key="${state.secretAccessKey}",
+    config=boto3.session.Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+)
+
+s3.put_object(
+    Bucket="${state.bucket || 'nama-bucket-kamu'}",
+    Key="contoh/halo.txt",
+    Body=b"halo dari S3 gateway",
+    ContentType="text/plain",
+)`,
+  laravel: () => `// config/filesystems.php -> disks.mega
+'mega' => [
+    'driver' => 's3',
+    'key' => '${state.accessKeyId}',
+    'secret' => '${state.secretAccessKey}',
+    'region' => '${state.region}',
+    'bucket' => '${state.bucket || 'nama-bucket-kamu'}',
+    'endpoint' => '${state.endpoint}',
+    'use_path_style_endpoint' => true,
+],
+
+// pakai
+Storage::disk('mega')->put('contoh/halo.txt', 'halo dari S3 gateway');`,
+  rclone: () => `# ~/.config/rclone/rclone.conf
+[mega-s3]
+type = s3
+provider = Other
+access_key_id = ${state.accessKeyId}
+secret_access_key = ${state.secretAccessKey}
+endpoint = ${state.endpoint}
+region = ${state.region}
+force_path_style = true
+
+# lalu
+rclone copy ./lokal mega-s3:${state.bucket || 'nama-bucket-kamu'}/contoh`,
+  cli: () => `export AWS_ACCESS_KEY_ID='${state.accessKeyId}'
+export AWS_SECRET_ACCESS_KEY='${state.secretAccessKey}'
+export AWS_DEFAULT_REGION='${state.region}'
+
+aws --endpoint-url ${state.endpoint} s3 ls
+aws --endpoint-url ${state.endpoint} s3 cp ./halo.txt s3://${state.bucket || 'nama-bucket-kamu'}/contoh/halo.txt`,
+  env: () => `S3_ENDPOINT=${state.endpoint}
+S3_REGION=${state.region}
+S3_BUCKET=${state.bucket || 'nama-bucket-kamu'}
+S3_ACCESS_KEY_ID=${state.accessKeyId}
+S3_SECRET_ACCESS_KEY=${state.secretAccessKey}
+S3_FORCE_PATH_STYLE=true`,
+}
+
+const SNIPPET_LABELS = {
+  js: 'AWS SDK (JS)',
+  boto3: 'Python boto3',
+  laravel: 'Laravel',
+  rclone: 'rclone',
+  cli: 'AWS CLI',
+  env: '.env',
+}
+
+function renderSnippets() {
+  const tabs = $('snippet-tabs')
+  tabs.innerHTML = ''
+  for (const key of Object.keys(SNIPPETS)) {
+    const btn = document.createElement('button')
+    btn.className = key === state.snippet ? 'btn' : 'btn-ghost'
+    btn.textContent = SNIPPET_LABELS[key]
+    btn.addEventListener('click', () => {
+      state.snippet = key
+      renderSnippets()
+    })
+    tabs.append(btn)
+  }
+  $('snippet-code').textContent = SNIPPETS[state.snippet]()
+}
+
+/* ---------- files ---------- */
+
+async function renderFiles() {
+  const body = $('files-body')
+  const query = state.bucket ? `?bucket=${encodeURIComponent(state.bucket)}&prefix=${encodeURIComponent(state.prefix)}` : ''
+  let data
+  try {
+    data = await api(`/api/browse${query}`)
+  } catch (err) {
+    body.innerHTML = `<div class="empty">${err.message}</div>`
+    return
+  }
+
+  if (!state.bucket) {
+    if (!data.buckets?.length) {
+      body.innerHTML = '<div class="empty">Belum ada bucket. Buat satu untuk mulai.</div>'
+    } else {
+      body.innerHTML = '<div class="buckets"></div>'
+      const grid = body.querySelector('.buckets')
+      for (const bucket of data.buckets) {
+        const btn = document.createElement('button')
+        btn.className = 'bucket'
+        btn.innerHTML = `<span>📦</span><span class="bname"></span>`
+        btn.querySelector('.bname').textContent = bucket.name
+        btn.addEventListener('click', () => {
+          state.bucket = bucket.name
+          state.prefix = ''
+          $('v-bucket').textContent = bucket.name
+          renderFiles()
+        })
+        grid.append(btn)
+      }
+    }
+  } else {
+    const rows = []
+    for (const folder of data.folders) {
+      rows.push({ ...folder, type: 'folder' })
+    }
+    for (const object of data.objects) {
+      rows.push({ ...object, type: 'file' })
+    }
+
+    if (!rows.length) {
+      body.innerHTML = '<div class="empty">Folder ini kosong.</div>'
+    } else {
+      const table = document.createElement('table')
+      table.className = 'list'
+      table.innerHTML = `<thead><tr><th>Nama</th><th>Ukuran</th><th></th></tr></thead><tbody></tbody>`
+      const tbody = table.querySelector('tbody')
+
+      for (const row of rows) {
+        const tr = document.createElement('tr')
+
+        const nameTd = document.createElement('td')
+        const nameBtn = document.createElement('button')
+        nameBtn.className = 'name-btn'
+        nameBtn.innerHTML = `<span>${row.type === 'folder' ? '📁' : '📄'}</span><span class="nm"></span>`
+        nameBtn.querySelector('.nm').textContent = row.name
+        if (row.type === 'folder') {
+          nameBtn.addEventListener('click', () => {
+            state.prefix = row.key
+            renderFiles()
+          })
+        }
+        nameTd.append(nameBtn)
+
+        const sizeTd = document.createElement('td')
+        sizeTd.className = 'tag'
+        sizeTd.textContent = row.type === 'folder' ? '—' : bytes(row.size)
+
+        const actionTd = document.createElement('td')
+        const actions = document.createElement('div')
+        actions.className = 'row-actions'
+
+        if (row.type === 'file') {
+          const dl = document.createElement('a')
+          dl.className = 'icon-btn'
+          dl.textContent = 'Unduh'
+          dl.href = `/api/download?bucket=${encodeURIComponent(state.bucket)}&key=${encodeURIComponent(row.key)}`
+          dl.style.textDecoration = 'none'
+          actions.append(dl)
+        }
+
+        const del = document.createElement('button')
+        del.className = 'icon-btn btn-danger'
+        del.textContent = 'Hapus'
+        del.addEventListener('click', async () => {
+          const label = row.type === 'folder' ? `folder "${row.name}"` : `file "${row.name}"`
+          if (!confirm(`Hapus permanen ${label}?`)) return
+          try {
+            await api('/api/delete', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ bucket: state.bucket, key: row.key, folder: row.type === 'folder' }),
+            })
+            toast('Terhapus')
+            renderFiles()
+          } catch (err) {
+            toast(err.message, true)
+          }
+        })
+        actions.append(del)
+
+        actionTd.append(actions)
+        tr.append(nameTd, sizeTd, actionTd)
+        tbody.append(tr)
+      }
+      body.innerHTML = ''
+      body.append(table)
+    }
+  }
+
+  renderCrumb()
+  $('up-btn').disabled = !state.bucket && !state.prefix
+  const needsBucket = !state.bucket
+  $('new-folder-btn').disabled = needsBucket
+  $('upload-btn').disabled = needsBucket
+  const hint = needsBucket ? 'Pilih atau buat bucket dulu' : ''
+  $('new-folder-btn').title = hint
+  $('upload-btn').title = hint
+}
+
+function renderCrumb() {
+  const crumb = $('crumb')
+  crumb.innerHTML = ''
+
+  const rootBtn = document.createElement('button')
+  rootBtn.textContent = 'Semua bucket'
+  rootBtn.addEventListener('click', () => {
+    state.bucket = ''
+    state.prefix = ''
+    renderFiles()
+  })
+  crumb.append(rootBtn)
+
+  if (!state.bucket) return
+
+  crumb.append(Object.assign(document.createElement('span'), { className: 'sep', textContent: '/' }))
+
+  const bucketBtn = document.createElement('button')
+  bucketBtn.textContent = state.bucket
+  bucketBtn.addEventListener('click', () => {
+    state.prefix = ''
+    renderFiles()
+  })
+  crumb.append(bucketBtn)
+
+  const parts = state.prefix ? state.prefix.split('/').filter(Boolean) : []
+  parts.forEach((part, index) => {
+    crumb.append(Object.assign(document.createElement('span'), { className: 'sep', textContent: '/' }))
+    const btn = document.createElement('button')
+    btn.textContent = part
+    btn.addEventListener('click', () => {
+      state.prefix = parts.slice(0, index + 1).join('/')
+      renderFiles()
+    })
+    crumb.append(btn)
+  })
+}
+
+$('up-btn').addEventListener('click', () => {
+  if (!state.bucket) return
+  if (!state.prefix) {
+    state.bucket = ''
+    renderFiles()
+    return
+  }
+  const parts = state.prefix.split('/').filter(Boolean)
+  parts.pop()
+  state.prefix = parts.join('/')
+  renderFiles()
+})
+
+$('new-bucket-btn').addEventListener('click', async () => {
+  const name = prompt('Nama bucket baru (huruf kecil, angka, titik, tanda hubung):')
+  if (!name) return
+  try {
+    await api('/api/bucket', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name }),
+    })
+    state.bucket = name.trim().toLowerCase()
+    state.prefix = ''
+    $('v-bucket').textContent = state.bucket
+    toast('Bucket dibuat')
+    renderFiles()
+  } catch (err) {
+    toast(err.message, true)
+  }
+})
+
+$('new-folder-btn').addEventListener('click', async () => {
+  if (!state.bucket) return toast('Pilih bucket dulu', true)
+  const name = prompt('Nama folder baru:')
+  if (!name) return
+  try {
+    await api('/api/folder', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ bucket: state.bucket, prefix: state.prefix, name }),
+    })
+    toast('Folder dibuat')
+    renderFiles()
+  } catch (err) {
+    toast(err.message, true)
+  }
+})
+
+$('upload-btn').addEventListener('click', () => $('file-input').click())
+
+$('file-input').addEventListener('change', async (event) => {
+  const files = [...event.target.files]
+  event.target.value = ''
+  if (!files.length) return
+  if (!state.bucket) return toast('Pilih bucket dulu', true)
+
+  for (const file of files) {
+    const form = new FormData()
+    form.append('bucket', state.bucket)
+    form.append('prefix', state.prefix)
+    form.append('file', file)
+    try {
+      toast(`Mengunggah ${file.name}…`)
+      await api('/api/upload', { method: 'POST', body: form })
+    } catch (err) {
+      toast(`${file.name}: ${err.message}`, true)
+      return
+    }
+  }
+  toast('Upload selesai')
+  renderFiles()
+})
+
+/* ---------- start ---------- */
+
+api('/api/me')
+  .then(async (info) => {
+    state.name = info.name
+    await boot()
+  })
+  .catch(() => {})
+</script>
+</body>
+</html>
