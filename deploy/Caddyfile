@@ -1,0 +1,35 @@
+# Reverse proxy untuk S3 gateway.
+#
+# Catatan penting:
+# - Header Host diteruskan apa adanya supaya tanda tangan SigV4 tetap valid
+#   (Host ikut ditandatangani klien).
+# - Kompresi (encode) sengaja TIDAK dipakai: respons S3 bergantung pada
+#   Content-Length, Content-Range, dan body streaming yang tidak boleh diubah.
+# - flush_interval -1 mematikan buffering agar upload/unduhan besar langsung
+#   dialirkan, bukan ditahan di memori.
+
+{$S3_DOMAIN} {
+	request_body {
+		max_size 5GB
+	}
+
+	reverse_proxy s3:3001 {
+		flush_interval -1
+		transport http {
+			read_timeout 0
+			write_timeout 0
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
+
+# Console web (opsional). Isi UI_DOMAIN di .env lalu hapus tanda komentar
+# pada blok berikut.
+#
+# {$UI_DOMAIN} {
+# 	reverse_proxy ui:3002
+# }

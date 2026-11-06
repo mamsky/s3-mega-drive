@@ -212,7 +212,10 @@ if (dbEnabled) {
 await loadIdentities()
 
 const port = Number(process.env.S3_UI_PORT ?? 3002)
-const hostname = process.env.S3_UI_HOSTNAME ?? '127.0.0.1'
+// Default 0.0.0.0 (bukan 127.0.0.1) supaya console tetap bisa dijangkau
+// reverse proxy di container lain. Tanpa ini, container UI hanya mendengar di
+// loopback-nya sendiri dan Caddy selalu gagal connect.
+const hostname = process.env.S3_UI_HOSTNAME ?? '0.0.0.0'
 
 if (config.identities.length === 0) {
   console.warn('[ui] Belum ada identitas S3 — isi tabel "identities" atau s3-identities.local.json dulu.')

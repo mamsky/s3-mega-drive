@@ -217,6 +217,20 @@ async function requireBucket(c, identity, bucket, storage) {
   await ensureBucketNode(storage, identity, bucket)
 }
 
+// ---------- health (tanpa auth, dipakai Docker/Caddy/CI) ----------
+// Nama sengaja pakai garis bawah: bucket S3 tidak boleh mengandung "_", jadi
+// path ini tidak mungkin bentrok dengan nama bucket sungguhan.
+//
+// Status 503 kalau belum ada identitas S3. Tanpa ini container tanpa .env tetap
+// dilaporkan "sehat" padahal semua request akan ditolak InvalidAccessKeyId,
+// sehingga deploy CI bisa lolos padahal gateway tidak bisa dipakai.
+app.get('/__health', (c) =>
+  c.json(
+    { ok: isConfigured, service: 'mega-drive-s3', uptime: Math.round(process.uptime()), identities: isConfigured },
+    isConfigured ? 200 : 503
+  )
+)
+
 // ---------- CORS + auth ----------
 
 app.use('*', async (c, next) => {

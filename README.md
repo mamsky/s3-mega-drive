@@ -9,6 +9,9 @@ boto3, rclone, Laravel Flysystem, `aws s3 cp`). Lihat **[S3.md](S3.md)**. Tersed
 Kalau perlu menyimpan identitas dan metadata di PostgreSQL, isi `DATABASE_URL` — lihat
 **[DATABASE.md](DATABASE.md)**. Tanpa database pun aplikasi tetap jalan seperti biasa.
 
+Untuk menjalankan di server sendiri (Docker, CI/CD GitHub Actions, HTTPS lewat
+Caddy), lihat **[DEPLOY.md](DEPLOY.md)**.
+
 Stack: [Bun](https://bun.sh) + [Hono](https://hono.dev) + [megajs](https://github.com/qgustavor/mega).
 
 ## 1. Isi kredensial

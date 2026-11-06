@@ -1,0 +1,86 @@
+name: s3-mega-drive
+
+x-app: &app
+  image: ${IMAGE:-ghcr.io/mamsky/s3-mega-drive:latest}
+  env_file:
+    - .env
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+  volumes:
+    - s3-state:/app/.s3-state
+    - s3-tmp:/app/.s3-tmp
+  environment:
+    # Nilai ini menimpa isi .env supaya .env hasil salinan dari lokal
+    # (yang biasanya memakai 127.0.0.1) tetap bisa dipakai apa adanya:
+    # di dalam container, 127.0.0.1 hanya loopback container itu sendiri
+    # sehingga Caddy tidak akan pernah bisa connect.
+    S3_HOSTNAME: 0.0.0.0
+    S3_UI_HOSTNAME: 0.0.0.0
+
+services:
+  s3:
+    <<: *app
+    command: ["bun", "run", "src/s3/server.js"]
+    ports:
+      - "127.0.0.1:${S3_PORT:-3001}:${S3_PORT:-3001}"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:' + (process.env.S3_PORT || 3001) + '/__health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  ui:
+    <<: *app
+    command: ["bun", "run", "src/ui/server.js"]
+    ports:
+      - "127.0.0.1:${S3_UI_PORT:-3002}:${S3_UI_PORT:-3002}"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:' + (process.env.S3_UI_PORT || 3002) + '/').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  api:
+    <<: *app
+    command: ["bun", "run", "src/server.js"]
+    profiles: ["api"]
+    ports:
+      - "127.0.0.1:${PORT:-3000}:${PORT:-3000}"
+
+  # Caddy hanya dipakai kalau port 80/443 bebas di host.
+  # Di VPS yang sudah punya nginx + Cloudflare Tunnel, service ini tidak perlu
+  # dan justru gagal start karena port 80/443 sudah dipakai proses lain.
+  # Aktifkan dengan: docker compose --profile caddy up -d
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["caddy"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      S3_DOMAIN: ${S3_DOMAIN:-s3.pasteprosmana.my.id}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - s3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  s3-state:
+  s3-tmp:
+  caddy-data:
+  caddy-config:

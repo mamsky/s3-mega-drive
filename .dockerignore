@@ -1,0 +1,22 @@
+# Semakin sedikit yang masuk build context, semakin kecil image & semakin cepat build.
+.git
+.github
+.omo
+.codegraph
+node_modules
+test
+*.md
+!README.md
+.env
+.env.*
+!.env.example
+env.local
+config.local.json
+config.example.json
+s3-identities.local.json
+s3-identities*.json
+.s3-state
+.s3-tmp
+*.log
+deploy
+docker-compose*.yml
