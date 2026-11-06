@@ -106,7 +106,9 @@ jobs:
   deploy:
     name: Deploy ke VPS
     needs: [test, build]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # VPS_HOST kosong berarti secrets belum diisi. Job dilewati (bukan gagal)
+    # supaya push tetap hijau; begitu secrets diisi, deploy otomatis aktif.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production

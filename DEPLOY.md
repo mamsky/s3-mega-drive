@@ -142,6 +142,7 @@ Buka **Settings → Secrets and variables → Actions**.
 | --- | --- |
 | `S3_DOMAIN` | `s3.pasteprosmana.my.id` |
 | `BUILD_PLATFORMS` | Opsional. Default `linux/amd64`. VPS ARM → `linux/arm64`. |
+| `DEPLOY_ENABLED` | Set `true` untuk mengaktifkan job deploy. Selama kosong, job deploy dilewati sehingga push tetap hijau meski secrets belum diisi. |
 
 ### Kunci SSH untuk deploy
 
